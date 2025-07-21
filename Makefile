@@ -2,7 +2,7 @@ CC = gcc
 CFLAGS = -Wall
 
 #generazione exe
-esame: compito.o grafi.o coda.o
+esame: compito.o grafi.o coda.o node.o
 	$(CC) $(CFLAGS) -o esame $^
 
 #generazione file oggetto
@@ -13,4 +13,7 @@ grafi.o: grafi.c grafi.h
 	$(CC) $(CFLAGS) -c $^
 
 coda.o: coda.c coda.h
+	$(CC) $(CFLAGS) -c $^
+
+node.o: node.c node.h
 	$(CC) $(CFLAGS) -c $^
