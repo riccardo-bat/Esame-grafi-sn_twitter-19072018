@@ -4,11 +4,14 @@
 #include <stdbool.h>
 #include "grafi.h"
 #include "node.h"
+#include "coda.h"
 
 //prototipi 
+long int int_input(char* msg, int minimum_value, int max_value);
 graph load_graph_from_file(char* filename);
 void stampa(graph grafo_twitter, node* arrayNodes);
 node* load_nodes_from_file(int numeroNodi, char* filename);
+void follow(graph, node*, int);
 
 
 int main(){
@@ -21,13 +24,34 @@ int main(){
     node* arrayNodes = load_nodes_from_file(get_dim(grafo_twitter), "node.txt");
     stampa(grafo_twitter, arrayNodes);
 
-
+    //punto 3b
+    printf("\n---------------");
+    follow(grafo_twitter, arrayNodes, (int) int_input("\nInserire l'id di un nodo di cui effettuare la ricerca: ", 1, get_dim(grafo_twitter)) );
 
     //libero la memoria
     free(arrayNodes);
 
     printf("\n\n");
     return 0;
+}
+
+long int int_input(char* msg, int minimum_value, int max_value){
+    long int input;
+    char buffer[100];
+
+    printf("%s", msg);
+    while(fgets(buffer, sizeof(buffer), stdin) == NULL) {
+        printf("\nErrore nella lettura dell'input. Riprova: ");
+    }
+
+    char *endptr;
+    input = strtol(buffer, &endptr, 10); //per altri formati, strtof, strtod, ...
+    if (endptr == buffer || *endptr != '\n' || input < minimum_value || input > max_value) {
+        printf("\nInput non valido\n.");
+        return int_input(msg, minimum_value, max_value);
+    }
+
+    return input;
 }
 
 /**
@@ -113,7 +137,7 @@ void stampa(graph grafo_twitter, node* arrayNodes){
     //scorro l'array del grafo
     for(int src=0; src<get_dim(grafo_twitter); src++){
         printf("\n");
-        
+
         //scorro i vicini del nodo src+1
         adj_list cursor = get_adjlist(grafo_twitter, src+1); 
         while(cursor != NULL){
@@ -204,5 +228,45 @@ node* load_nodes_from_file(int numeroNodi, char* filename){
     return arrayNodes;
 }
 
+/**
+ * @brief Procedura che stampa i nodi che il nodo id_node segue indirettamente o direttamente
+ * 
+ * @param grafo_twitter 
+ * @param arrayNodes 
+ * @param id_nodo 
+ */
+void follow(graph grafo_twitter, node* arrayNodes, int id_nodo){
+    //utilizzo una visita BFS
 
+    coda queue = newQueue();
+    bool* visited = malloc(get_dim(grafo_twitter) * sizeof(bool));
+    //controllo malloc
+
+    //inserisco la sorgente della visita
+    queue = enqueue(queue, id_nodo); //1-based
+    visited[id_nodo-1] = true;
+
+    printf("L'utente %s segue: ", arrayNodes[id_nodo-1].cont);
+    while(isEmpty(queue) != 1){
+        int u = dequeue(&queue);
+
+        //stampo l'utente che id_nodo segue direttamente o indirettamente, tranne id_node stesso
+        if(u != id_nodo) printf("\n\t%s", arrayNodes[u-1].cont);
+
+        //verifico tutti gli utenti seguiti da u
+        adj_list cursor = get_adjlist(grafo_twitter, u);
+        while(cursor != NULL){
+            //se u segue un nodo utente (diverso da id_node) lo inserisco nella coda <=> non è già stato entrato in coda
+            if(arrayNodes[cursor->node].tipo == 'U' && !visited[cursor->node]){
+                queue = enqueue(queue, cursor->node+1);
+                visited[cursor->node] = true;
+            }
+
+            cursor = get_nextadj(cursor);
+        }
+
+    }
+
+    free(visited);
+}
 
