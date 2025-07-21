@@ -12,6 +12,7 @@ graph load_graph_from_file(char* filename);
 void stampa(graph grafo_twitter, node* arrayNodes);
 node* load_nodes_from_file(int numeroNodi, char* filename);
 void follow(graph, node*, int);
+int* totalLike(graph grafo_twitter, node* arrayNodes);
 
 
 int main(){
@@ -27,6 +28,29 @@ int main(){
     //punto 3b
     printf("\n---------------");
     follow(grafo_twitter, arrayNodes, (int) int_input("\nInserire l'id di un nodo di cui effettuare la ricerca: ", 1, get_dim(grafo_twitter)) );
+
+
+    //punto 3a
+    printf("\n---------------");
+    int* likes = totalLike(grafo_twitter, arrayNodes);
+
+    //cerco il numero di like massimi 
+    int max = likes[0];
+    for(int i=1; i<get_dim(grafo_twitter); i++){
+        if(likes[i] > max)
+            max = likes[i];
+    }
+
+    printf("\nI MIP sono: ");
+    //stampo gli utenti che hanno il #likes massimo
+    for(int i=0; i<get_dim(grafo_twitter); i++){
+        if(likes[i] == max){
+            printf("\n\t");
+            print(arrayNodes[i]);
+            printf(", dal totale di %d likes", likes[i]);
+        }
+    }
+
 
     //libero la memoria
     free(arrayNodes);
@@ -269,4 +293,64 @@ void follow(graph grafo_twitter, node* arrayNodes, int id_nodo){
 
     free(visited);
 }
+
+/**
+ * @brief id_twitter 1-based. Return 1-based
+ * 
+ * @param grafo_twitter 
+ * @param id_twitter 
+ * @return int 
+ */
+int find_owner_tweet(graph grafo_twitter, node* arrayNodes, int id_twitter){
+    //considero solo i vicini del twitter
+    adj_list cursor = get_adjlist(grafo_twitter, id_twitter);
+    //cerco la relazione T-->U
+    while(cursor != NULL){
+        if(arrayNodes[cursor->node].tipo == 'U')  
+            return cursor->node+1;
+
+        cursor = cursor->next;
+    }
+
+    return -1;
+}
+
+/**
+ * @brief Funzione che restituisce il numero di like ai tweet ricevuti per ogni utente
+ * 
+ */
+int* totalLike(graph grafo_twitter, node* arrayNodes){
+    int* likes = malloc(get_dim(grafo_twitter) * sizeof(int));
+    for(int i=0; i<get_dim(grafo_twitter); i++) likes[i] = 0;
+
+    //scorro tutto il grafo per verifico il #totale di like ricevuti da ogni utente per i propri tweet
+    for(int node=0; node<get_dim(grafo_twitter); node++){
+        //considero solo i nodi utente e le relazioni U->T
+        if(arrayNodes[node].tipo == 'U'){
+            //cerco una relazione -->T
+            adj_list cursor = get_adjlist(grafo_twitter, node+1);
+            while(cursor != NULL){
+                //se il vicino di node+1 è un tweet
+                if(arrayNodes[cursor->node].tipo == 'T'){
+                    //cerco l'owner del tweet dall'id pari a cursor->node+1
+                    likes[find_owner_tweet(grafo_twitter, arrayNodes, cursor->node+1) - 1] += 1;
+                }
+
+                //else --> non mi interessano le relazioni di follow
+
+                cursor = get_nextadj(cursor);
+            }
+
+
+        }
+
+        //else --> non considero i tweet
+
+
+    }
+
+    return likes;
+
+}
+
 
